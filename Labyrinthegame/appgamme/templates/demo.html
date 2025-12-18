@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reinforcement Learning Debugger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 200, 100, 0.1), transparent 50%);
+            pointer-events: none;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1400px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .maze-section {
+            background: linear-gradient(145deg, rgba(40, 30, 20, 0.9), rgba(60, 45, 30, 0.9));
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid #8b6914;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .maze-section::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #8b6914, #cd9b1d, #8b6914);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .debugger-section {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            width: 350px;
+            position: relative;
+        }
+
+        .debugger-section::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        h1 {
+            color: #00ffff;
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .stats {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .stat-label {
+            color: #00cccc;
+        }
+
+        .stat-value {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 3px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.empty {
+            background: #4a3929;
+            border: 1px solid #3a2919;
+        }
+
+        .cell.wall {
+            background: #1a1a1a;
+            border: 2px solid #0a0a0a;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .cell.start {
+            background: radial-gradient(circle, #4ade80, #22c55e);
+            color: white;
+            border: 3px solid #16a34a;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3);
+            animation: glow-green 2s ease-in-out infinite;
+        }
+
+        .cell.goal {
+            background: radial-gradient(circle, #60a5fa, #3b82f6);
+            color: white;
+            border: 3px solid #2563eb;
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3);
+            animation: glow-blue 2s ease-in-out infinite;
+        }
+
+        .cell.treasure {
+            background: radial-gradient(circle, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+        }
+
+        .cell.portal {
+            background: radial-gradient(circle, #a855f7, #9333ea);
+            border: 2px solid #7e22ce;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
+            animation: pulse-portal 1.5s ease-in-out infinite;
+        }
+
+        .cell.path {
+            background: radial-gradient(circle, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .cell.trap {
+            background: radial-gradient(circle, #ef4444, #dc2626);
+            border: 2px solid #b91c1c;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+        }
+
+        @keyframes glow-green {
+            0%, 100% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(74, 222, 128, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.5); }
+        }
+
+        @keyframes glow-blue {
+            0%, 100% { box-shadow: 0 0 20px rgba(96, 165, 250, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(96, 165, 250, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.5); }
+        }
+
+        @keyframes pulse-portal {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .heatmap-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            margin: 20px 0;
+        }
+
+        .heatmap-title {
+            text-align: center;
+            color: #00ffff;
+            font-size: 1em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .heatmap-grid {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .heatmap-cell {
+            width: 20px;
+            height: 20px;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            color: #00ff88;
+            font-size: 0.85em;
+            margin: 5px 0;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .log-line::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #00ffff;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Scrollbar styling */
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .log-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="maze-section">
+            <div class="maze-grid" style="grid-template-columns: repeat({{ maze.0|length }}, 1fr);">
+                {% for row in maze %}
+                    {% for cell in row %}
+                        {% with row_idx=forloop.parentloop.counter0 col_idx=forloop.counter0 %}
+                            {% with key=row_idx|stringformat:"d"|add:","|add:col_idx|stringformat:"d" %}
+                                <div class="cell 
+                                    {% if cell == '#' %}wall
+                                    {% elif cell == 'S' %}start{% if key in path_str %} path{% endif %}
+                                    {% elif cell == 'G' %}goal{% if key in path_str %} path{% endif %}
+                                    {% elif cell == 'T' %}treasure
+                                    {% elif cell == 'P' %}portal
+                                    {% elif cell == 'X' %}trap
+                                    {% elif key in path_str %}path
+                                    {% else %}empty
+                                    {% endif %}">
+                                    {% if cell == 'S' %}S
+                                    {% elif cell == 'G' %}G
+                                    {% elif cell == 'T' %}💰
+                                    {% elif cell == 'P' %}🌀
+                                    {% elif cell == 'X' %}⚠
+                                    {% elif cell == '#' %}
+                                    {% elif key in path_str %}•
+                                    {% endif %}
+                                </div>
+                            {% endwith %}
+                        {% endwith %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="debugger-section">
+            <h1>Reinforcement Learning Debugger</h1>
+            
+            <div class="stats">
+                <div class="stat-line">
+                    <span class="stat-label">Current Episode:</span>
+                    <span class="stat-value">1000</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Epsilon:</span>
+                    <span class="stat-value">0.10</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Epsilon (Exploration Rate):</span>
+                    <span class="stat-value">0.10</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Alpha (Learning Rate):</span>
+                    <span class="stat-value">0.10</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Gamma (Discount Factor):</span>
+                    <span class="stat-value">0.90</span>
+                </div>
+            </div>
+
+            <div class="heatmap-container">
+                <div class="heatmap-title">Q-Table Heatmap</div>
+                <div class="heatmap-grid" style="grid-template-columns: repeat({{ maze.0|length }}, 1fr);">
+                    {% for row in maze %}
+                        {% for cell in row %}
+                            {% with row_idx=forloop.parentloop.counter0 col_idx=forloop.counter0 %}
+                                {% with key=row_idx|stringformat:"d"|add:","|add:col_idx|stringformat:"d" %}
+                                    <div class="heatmap-cell" 
+                                         style="background-color: 
+                                         {% if cell == '#' %}#000000
+                                         {% elif cell == 'S' %}#22c55e
+                                         {% elif cell == 'G' %}#3b82f6
+                                         {% elif key in path_str %}#fbbf24
+                                         {% else %}#1e293b
+                                         {% endif %};">
+                                    </div>
+                                {% endwith %}
+                            {% endwith %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="log-container">
+                <div class="log-line">Training completed</div>
+                <div class="log-line">Path found: {{ path_str|length }} steps</div>
+                <div class="log-line">Optimal policy extracted</div>
+                <div class="log-line">Agent reached goal successfully</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" onclick="window.location.reload();">Retrain</button>
+                <button class="btn" onclick="window.location.href='{% url 'home' %}';">Menu</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

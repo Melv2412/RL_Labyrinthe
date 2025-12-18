@@ -1,0 +1,15 @@
+# Django Framework
+Django>=3.2,<5.0
+
+# NumPy pour les calculs Q-Learning
+numpy>=1.21.0
+
+# Optionnel : pour de meilleures performances
+scipy>=1.7.0
+
+# Optionnel : pour la visualisation (si besoin)
+matplotlib>=3.4.0
+
+# Optionnel : pour les tests
+pytest>=7.0.0
+pytest-django>=4.5.0
