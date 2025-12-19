@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reinforcement Learning Debugger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            overflow: auto;      /* scroll automatique si nécessaire */
+  overflow-y: scroll;  /* scroll vertical */
+  overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 200, 100, 0.1), transparent 50%);
+            pointer-events: none;
+        }
+
+        .game-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1400px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .maze-section {
+            background: linear-gradient(145deg, rgba(40, 30, 20, 0.9), rgba(60, 45, 30, 0.9));
+            padding: 30px;
+            border-radius: 20px;
+            border: 3px solid #8b6914;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .maze-section::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            background: linear-gradient(45deg, #8b6914, #cd9b1d, #8b6914);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .debugger-section {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            width: 350px;
+            position: relative;
+        }
+
+        .debugger-section::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            right: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, transparent);
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        h1 {
+            color: #00ffff;
+            text-align: center;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .stats {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .stat-line {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .stat-label {
+            color: #00cccc;
+        }
+
+        .stat-value {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            background: rgba(0, 0, 0, 0.5);
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #00ff88);
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 3px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.empty {
+            background: #4a3929;
+            border: 1px solid #3a2919;
+        }
+
+        .cell.wall {
+            background: #1a1a1a;
+            border: 2px solid #0a0a0a;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .cell.start {
+            background: radial-gradient(circle, #4ade80, #22c55e);
+            color: white;
+            border: 3px solid #16a34a;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3);
+            animation: glow-green 2s ease-in-out infinite;
+        }
+
+        .cell.goal {
+            background: radial-gradient(circle, #60a5fa, #3b82f6);
+            color: white;
+            border: 3px solid #2563eb;
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3);
+            animation: glow-blue 2s ease-in-out infinite;
+        }
+
+        .cell.path {
+            background: radial-gradient(circle, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+            animation: pathAppear 0.5s ease;
+        }
+
+        @keyframes glow-green {
+            0%, 100% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(74, 222, 128, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.5); }
+        }
+
+        @keyframes glow-blue {
+            0%, 100% { box-shadow: 0 0 20px rgba(96, 165, 250, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(96, 165, 250, 0.9), inset 0 0 20px rgba(255, 255, 255, 0.5); }
+        }
+
+        @keyframes pathAppear {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.5) rotate(180deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(0deg);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            color: #00ff88;
+            font-size: 0.85em;
+            margin: 5px 0;
+            padding-left: 15px;
+            position: relative;
+            opacity: 0;
+            animation: fadeInLog 0.5s ease forwards;
+        }
+
+        .log-line::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #00ffff;
+        }
+
+        @keyframes fadeInLog {
+            to { opacity: 1; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 0.9em;
+            font-weight: bold;
+            border: 2px solid #00ffff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            background: rgba(251, 191, 36, 0.2);
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #fbbf24;
+            font-weight: bold;
+        }
+
+        .status-badge.success {
+            background: rgba(74, 222, 128, 0.2);
+            border-color: #22c55e;
+            color: #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="maze-section">
+            <div class="maze-grid" id="mazeGrid" style="grid-template-columns: repeat({{ maze.0|length }}, 1fr);">
+                {% for row in maze %}
+                    {% for cell in row %}
+                        {% with row_idx=forloop.parentloop.counter0 col_idx=forloop.counter0 %}
+                            <div class="cell 
+                                {% if cell == '#' %}wall
+                                {% elif cell == 'S' %}start
+                                {% elif cell == 'G' %}goal
+                                {% else %}empty
+                                {% endif %}"
+                                data-row="{{ row_idx }}"
+                                data-col="{{ col_idx }}">
+                                {% if cell == 'S' %}S
+                                {% elif cell == 'G' %}G
+                                {% endif %}
+                            </div>
+                        {% endwith %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="debugger-section">
+            <h1>RL Debugger</h1>
+            
+            <div class="status-badge" id="statusBadge">
+                ⏳ Recherche du chemin...
+            </div>
+
+            <div class="stats">
+                <div class="stat-line">
+                    <span class="stat-label">Épisodes:</span>
+                    <span class="stat-value">1000</span>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Progression:</span>
+                    <span class="stat-value" id="progressText">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar"></div>
+                </div>
+                <div class="stat-line">
+                    <span class="stat-label">Étapes trouvées:</span>
+                    <span class="stat-value" id="stepsCount">0 / {{ path_str|length }}</span>
+                </div>
+            </div>
+
+            <div class="log-container" id="logContainer">
+                <div class="log-line" style="animation-delay: 0s;">Initialisation de l'algorithme Q-Learning</div>
+                <div class="log-line" style="animation-delay: 0.2s;">Entraînement sur 1000 épisodes...</div>
+                <div class="log-line" style="animation-delay: 0.4s;">Q-Table construite avec succès</div>
+                <div class="log-line" style="animation-delay: 0.6s;">Extraction de la politique optimale</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn" id="startBtn" onclick="startAnimation()">▶ Démarrer</button>
+                <button class="btn" onclick="window.location.href='{% url 'home' %}';">Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chemin optimal du serveur
+        const optimalPath = {{ path_str|safe }};
+        let currentStep = 0;
+        let animationInterval = null;
+        let isAnimating = false;
+
+        function startAnimation() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '⏸ En cours...';
+            document.getElementById('statusBadge').textContent = '🚀 Recherche en cours...';
+            
+            // Réinitialiser le chemin
+            document.querySelectorAll('.cell.path').forEach(cell => {
+                cell.classList.remove('path');
+                cell.textContent = '';
+            });
+            
+            currentStep = 0;
+            
+            // Ajouter log de démarrage
+            addLog('🎯 Démarrage de la visualisation du chemin');
+            
+            // Animation progressive
+            animationInterval = setInterval(() => {
+                if (currentStep >= optimalPath.length) {
+                    clearInterval(animationInterval);
+                    finishAnimation();
+                    return;
+                }
+                
+                // Récupérer la position actuelle
+                const position = optimalPath[currentStep];
+                const [row, col] = position.split(',').map(Number);
+                
+                // Trouver la cellule
+                const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                
+                if (cell && !cell.classList.contains('start') && !cell.classList.contains('goal')) {
+                    cell.classList.add('path');
+                    cell.textContent = '•';
+                }
+                
+                // Mettre à jour les stats
+                currentStep++;
+                const progress = Math.round((currentStep / optimalPath.length) * 100);
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressText').textContent = progress + '%';
+                document.getElementById('stepsCount').textContent = currentStep + ' / ' + optimalPath.length;
+                
+                // Log tous les 3 pas
+                if (currentStep % 3 === 0) {
+                    addLog(`Exploration: étape ${currentStep}/${optimalPath.length}`);
+                }
+                
+            }, 200); // 200ms entre chaque étape
+        }
+
+        function finishAnimation() {
+            isAnimating = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🔄 Rejouer';
+            document.getElementById('statusBadge').textContent = '✅ Chemin optimal trouvé !';
+            document.getElementById('statusBadge').classList.add('success');
+            
+            addLog('✨ Chemin optimal atteint !');
+            addLog(`📊 Total: ${optimalPath.length} étapes`);
+            addLog('🎯 Agent a atteint l\'objectif (G)');
+        }
+
+        function addLog(message) {
+            const logContainer = document.getElementById('logContainer');
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.textContent = message;
+            logContainer.appendChild(logLine);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Démarrage automatique après 1 seconde
+        setTimeout(() => {
+            startAnimation();
+        }, 1000);
+    </script>
+</body>
+</html>

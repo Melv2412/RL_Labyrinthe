@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entraînement en Direct - RL Debugger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ffff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 200, 100, 0.1), transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            animation: glow-title 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-title {
+            0%, 100% { text-shadow: 0 0 20px #00ffff; }
+            50% { text-shadow: 0 0 40px #00ffff, 0 0 60px #00ffff; }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .maze-container {
+            background: linear-gradient(145deg, rgba(40, 30, 20, 0.9), rgba(60, 45, 30, 0.9));
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #8b6914;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 3px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            justify-content: center;
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.empty { background: #4a3929; border: 1px solid #3a2919; }
+        .cell.wall { background: #1a1a1a; border: 2px solid #0a0a0a; }
+        .cell.start { 
+            background: radial-gradient(circle, #4ade80, #22c55e);
+            color: white;
+            border: 3px solid #16a34a;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.6);
+        }
+        .cell.goal { 
+            background: radial-gradient(circle, #60a5fa, #3b82f6);
+            color: white;
+            border: 3px solid #2563eb;
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
+        }
+        .cell.path { 
+            background: radial-gradient(circle, #fbbf24, #f59e0b);
+            border: 2px solid #d97706;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+        .cell.exploring {
+            background: radial-gradient(circle, #a855f7, #9333ea);
+            border: 2px solid #7e22ce;
+            animation: pulse 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .chart-container {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            height: 250px;
+        }
+
+        .chart-title {
+            color: #00ffff;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #rewardChart {
+            width: 100%;
+            height: 180px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-panel {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .stat-box {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            color: #00cccc;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #00ffff;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .progress-container {
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            background: rgba(0, 0, 0, 0.5);
+            height: 25px;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #00ff88);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .log-panel {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            color: #00ff88;
+            font-size: 0.85em;
+            margin: 5px 0;
+            padding-left: 15px;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .log-line::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #00ffff;
+        }
+
+        .log-line.warning { color: #fbbf24; }
+        .log-line.success { color: #4ade80; }
+        .log-line.info { color: #60a5fa; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            font-size: 1em;
+            font-weight: bold;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            text-transform: uppercase;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn.primary {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+        }
+
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Entraînement en Direct - Q-Learning</h1>
+            <p style="color: #00cccc; margin-top: 10px;">Visualisation de l'apprentissage par renforcement</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="left-panel">
+                <div class="maze-container">
+                    <h3 style="color: #00ffff; text-align: center; margin-bottom: 20px;">🗺️ Labyrinthe</h3>
+                    <div class="maze-grid" id="mazeGrid" style="grid-template-columns: repeat({{ maze.0|length }}, 1fr);">
+                        {% for row in maze %}
+                            {% for cell in row %}
+                                {% with row_idx=forloop.parentloop.counter0 col_idx=forloop.counter0 %}
+                                    <div class="cell 
+                                        {% if cell == '#' %}wall
+                                        {% elif cell == 'S' %}start
+                                        {% elif cell == 'G' %}goal
+                                        {% else %}empty
+                                        {% endif %}"
+                                        data-row="{{ row_idx }}"
+                                        data-col="{{ col_idx }}">
+                                        {% if cell == 'S' %}S
+                                        {% elif cell == 'G' %}G
+                                        {% endif %}
+                                    </div>
+                                {% endwith %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">📊 Récompenses par Épisode</div>
+                    <canvas id="rewardChart"></canvas>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="stats-panel">
+                    <h3 style="color: #00ffff; margin-bottom: 15px; text-align: center;">📈 Statistiques</h3>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">Épisode Actuel</div>
+                        <div class="stat-value" id="currentEpisode">0</div>
+                    </div>
+
+                    <div class="progress-container">
+                        <div class="stat-label">Progression</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressBar">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-box">
+                        <div class="stat-label">Récompense Actuelle</div>
+                        <div class="stat-value" id="currentReward">0</div>
+                    </div>
+
+                    <div class="stat-box">
+                        <div class="stat-label">Longueur du Chemin</div>
+                        <div class="stat-value" id="pathLength">0</div>
+                    </div>
+
+                    <div class="controls">
+                        <button class="btn primary" id="startBtn" onclick="startTraining()">▶ Démarrer</button>
+                        <button class="btn" onclick="window.location.href='{% url 'home' %}';">Menu</button>
+                    </div>
+                </div>
+
+                <div class="log-panel" id="logPanel">
+                    <div class="log-line info">Système initialisé</div>
+                    <div class="log-line">Prêt à démarrer l'entraînement</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Données d'entraînement du serveur
+        const trainingData = {{ training_data|safe }};
+        const totalEpisodes = trainingData.history.length;
+        
+        let currentEpisode = 0;
+        let isTraining = false;
+        let trainingInterval = null;
+        
+        // Configuration du graphique
+        const ctx = document.getElementById('rewardChart').getContext('2d');
+        const rewardChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Récompense',
+                    data: [],
+                    borderColor: '#00ffff',
+                    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        grid: { color: 'rgba(0, 255, 255, 0.1)' },
+                        ticks: { color: '#00cccc' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(0, 255, 255, 0.1)' },
+                        ticks: { color: '#00cccc' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#00ffff' } }
+                }
+            }
+        });
+
+        function startTraining() {
+            if (isTraining) return;
+            
+            isTraining = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').textContent = '⏸ En cours...';
+            
+            addLog('🚀 Démarrage de l\'entraînement', 'info');
+            addLog(`📊 ${totalEpisodes} épisodes à exécuter`, 'info');
+            
+            // Réinitialiser
+            currentEpisode = 0;
+            rewardChart.data.labels = [];
+            rewardChart.data.datasets[0].data = [];
+            clearMazePath();
+            
+            // Simuler l'entraînement
+            trainingInterval = setInterval(() => {
+                if (currentEpisode >= totalEpisodes) {
+                    finishTraining();
+                    return;
+                }
+                
+                const episode = trainingData.history[currentEpisode];
+                
+                // Mettre à jour les stats
+                document.getElementById('currentEpisode').textContent = episode.episode + 1;
+                document.getElementById('currentReward').textContent = episode.reward.toFixed(0);
+                document.getElementById('pathLength').textContent = episode.steps;
+                
+                const progress = Math.round(((episode.episode + 1) / totalEpisodes) * 100);
+                document.getElementById('progressBar').style.width = progress + '%';
+                document.getElementById('progressBar').textContent = progress + '%';
+                
+                // Mettre à jour le graphique (tous les 10 épisodes)
+                if (episode.episode % 10 === 0) {
+                    rewardChart.data.labels.push(episode.episode);
+                    rewardChart.data.datasets[0].data.push(episode.reward);
+                    rewardChart.update('none');
+                }
+                
+                // Afficher le chemin actuel
+                if (episode.episode % 50 === 0) {
+                    visualizePath(episode.path);
+                    addLog(`Episode ${episode.episode}: récompense = ${episode.reward.toFixed(0)}`, 
+                           episode.reward > 50 ? 'success' : 'warning');
+                }
+                
+                currentEpisode++;
+                
+            }, 20); // 20ms par épisode = 20 secondes pour 1000 épisodes
+        }
+
+        function finishTraining() {
+            clearInterval(trainingInterval);
+            isTraining = false;
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').textContent = '🔄 Rejouer';
+            
+            // Afficher le chemin final
+            const finalPath = trainingData.final_path.map(pos => pos.split(',').map(Number));
+            visualizePath(finalPath, true);
+            
+            addLog('✅ Entraînement terminé !', 'success');
+            addLog(`🎯 Chemin optimal: ${finalPath.length} étapes`, 'success');
+            addLog('🧠 Q-Table construite avec succès', 'success');
+        }
+
+        function visualizePath(path, isFinal = false) {
+            clearMazePath();
+            
+            path.forEach((pos, index) => {
+                setTimeout(() => {
+                    const [row, col] = Array.isArray(pos) ? pos : pos.split(',').map(Number);
+                    const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                    
+                    if (cell && !cell.classList.contains('start') && !cell.classList.contains('goal')) {
+                        cell.classList.add(isFinal ? 'path' : 'exploring');
+                        if (isFinal) cell.textContent = '•';
+                    }
+                }, index * 50);
+            });
+        }
+
+        function clearMazePath() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('path', 'exploring');
+                if (!cell.classList.contains('start') && !cell.classList.contains('goal')) {
+                    cell.textContent = '';
+                }
+            });
+        }
+
+        function addLog(message, type = '') {
+            const logPanel = document.getElementById('logPanel');
+            const logLine = document.createElement('div');
+            logLine.className = `log-line ${type}`;
+            logLine.textContent = message;
+            logPanel.appendChild(logLine);
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }
+    </script>
+</body>
+</html>
