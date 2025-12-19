@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À propos - RL Maze Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 200, 100, 0.1), transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: glow-title 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-title {
+            0%, 100% { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+            50% { text-shadow: 0 0 30px #00ffff, 0 0 60px #00ffff, 0 0 80px #00ffff; }
+        }
+
+        .subtitle {
+            color: #00cccc;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+        }
+
+        .section {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .section-content {
+            color: #00cccc;
+            line-height: 1.8;
+        }
+
+        .section-content p {
+            margin-bottom: 15px;
+        }
+
+        .section-content strong {
+            color: #00ffff;
+        }
+
+        .info-box {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            margin: 20px 0;
+        }
+
+        .formula {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-size: 1.2em;
+            text-align: center;
+            color: #fbbf24;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        .features-list, .steps-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features-list li, .steps-list li {
+            padding: 12px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #00cccc;
+            line-height: 1.6;
+        }
+
+        .features-list li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #00ffff;
+            font-size: 1.2em;
+        }
+
+        .steps-list li {
+            counter-increment: step-counter;
+        }
+
+        .steps-list {
+            counter-reset: step-counter;
+        }
+
+        .steps-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            background: rgba(0, 255, 255, 0.2);
+            color: #00ffff;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #00ffff;
+            font-weight: bold;
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .param-card {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        .param-value {
+            font-size: 2em;
+            color: #00ffff;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .param-label {
+            color: #00cccc;
+            font-size: 0.9em;
+        }
+
+        .param-desc {
+            color: #00aaaa;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .team-member {
+            background: rgba(0, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .team-member:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .team-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .team-name {
+            font-size: 1.2em;
+            color: #00ffff;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .team-role {
+            color: #00cccc;
+            font-size: 0.9em;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .tech-badge {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tech-badge:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .code-structure {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #00cccc;
+            overflow-x: auto;
+        }
+
+        .code-structure pre {
+            margin: 0;
+            white-space: pre;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 30px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #00ffff;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .params-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .team-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 À propos du Projet</h1>
+            <p class="subtitle">Intelligence Artificielle & Apprentissage par Renforcement</p>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🤖 Qu'est-ce que le Q-Learning ?</h2>
+            <div class="section-content">
+                <p>
+                    Le <strong>Q-Learning</strong> est un algorithme d'apprentissage par renforcement qui permet à un agent
+                    d'apprendre à prendre des décisions optimales dans un environnement. C'est une méthode d'apprentissage
+                    sans supervision où l'agent apprend par essais et erreurs.
+                </p>
+                
+                <div class="info-box">
+                    <strong>Principe fondamental :</strong> L'agent explore son environnement, reçoit des récompenses
+                    pour ses actions, et améliore progressivement sa politique de décision pour maximiser les récompenses
+                    totales sur le long terme.
+                </div>
+
+                <h3 style="color: #00ffff; margin: 25px 0 15px 0;">🎯 Fonctionnement</h3>
+                <ol class="steps-list">
+                    <li><strong>État (State):</strong> Position actuelle de l'agent dans le labyrinthe (ligne, colonne)</li>
+                    <li><strong>Action:</strong> Déplacement possible → Haut ⬆️, Bas ⬇️, Gauche ⬅️, Droite ➡️</li>
+                    <li><strong>Récompense:</strong> 
+                        <ul style="margin-top: 10px; list-style: none;">
+                            <li>🎯 +100 points → Atteindre l'arrivée (G)</li>
+                            <li>🚫 -10 points → Tenter d'entrer dans un mur (#)</li>
+                            <li>⚡ -1 point → Chaque déplacement normal</li>
+                        </ul>
+                    </li>
+                    <li><strong>Q-Table:</strong> Tableau stockant la valeur de chaque action dans chaque état</li>
+                </ol>
+
+                <div class="formula">
+                    Q(s,a) ← Q(s,a) + α [r + γ max Q(s',a') - Q(s,a)]
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">⚙️ Paramètres d'entraînement</h2>
+            <div class="section-content">
+                <div class="params-grid">
+                    <div class="param-card">
+                        <div class="param-label">Épisodes</div>
+                        <div class="param-value">1000</div>
+                        <div class="param-desc">Nombre de parties d'entraînement</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Alpha (α)</div>
+                        <div class="param-value">0.10</div>
+                        <div class="param-desc">Taux d'apprentissage</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Gamma (γ)</div>
+                        <div class="param-value">0.90</div>
+                        <div class="param-desc">Facteur de discount</div>
+                    </div>
+                    <div class="param-card">
+                        <div class="param-label">Epsilon (ε)</div>
+                        <div class="param-value">0.10</div>
+                        <div class="param-desc">Taux d'exploration</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">💻 Architecture Technique</h2>
+            <div class="section-content">
+                <div class="code-structure">
+                    <pre>
+Labyrinthegame/
+├── appgamme/                  🎨 Application Django
+│   ├── templates/             📄 Interfaces HTML
+│   │   ├── home.html         🏠 Menu principal
+│   │   ├── demo.html         🎯 Démonstration
+│   │   ├── choose_maze.html  🗺️ Sélection
+│   │   ├── create_maze.html  ✏️ Création
+│   │   └── about.html        📚 Documentation
+│   ├── views.py              🔄 Logique des vues
+│   └── urls.py               🛣️ Routes URL
+├── rl_engine/                🤖 Moteur d'IA
+│   ├── maze.py               🧩 Classe Maze
+│   └── q_learner.py          🧠 Algorithme Q-Learning
+├── Labyrinthegame/           ⚙️ Configuration
+│   ├── settings.py
+│   └── urls.py
+└── manage.py                 🚀 Point d'entrée
+                    </pre>
+                </div>
+
+                <h3 style="color: #00ffff; margin: 25px 0 15px 0;">🛠️ Technologies</h3>
+                <div class="tech-stack">
+                    <div class="tech-badge">🐍 Python 3.x</div>
+                    <div class="tech-badge">🎯 Django 3.2+</div>
+                    <div class="tech-badge">🧠 Q-Learning</div>
+                    <div class="tech-badge">🎨 HTML5/CSS3</div>
+                    <div class="tech-badge">📊 NumPy</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">✨ Fonctionnalités</h2>
+            <div class="section-content">
+                <ul class="features-list">
+                    <li>Résolution automatique de labyrinthes par algorithme de Q-Learning</li>
+                    <li>Visualisation en temps réel du chemin optimal trouvé</li>
+                    <li>Heatmap de la Q-Table pour comprendre l'apprentissage</li>
+                    <li>Sélection parmi plusieurs labyrinthes prédéfinis (facile, moyen, difficile)</li>
+                    <li>Éditeur interactif pour créer des labyrinthes personnalisés</li>
+                    <li>Affichage des statistiques d'entraînement et de performance</li>
+                    <li>Interface style "Reinforcement Learning Debugger" immersive</li>
+                    <li>Réentraînement de l'IA à la demande pour voir différentes solutions</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">👥 Équipe du Projet</h2>
+            <div class="section-content">
+                <div class="team-grid">
+                    <div class="team-member">
+                        <div class="team-icon">👨‍💻</div>
+                        <div class="team-name">Steven</div>
+                        <div class="team-role">Backend Developer</div>
+                    </div>
+                    <div class="team-member">
+                        <div class="team-icon">🤖</div>
+                        <div class="team-name">Blé</div>
+                        <div class="team-role">AI Developer</div>
+                    </div>
+                    <div class="team-member">
+                        <div class="team-icon">🧠</div>
+                        <div class="team-name">Yann</div>
+                        <div class="team-role">AI Developer</div>
+                    </div>
+                    <div class="team-member">
+                        <div class="team-icon">🎨</div>
+                        <div class="team-name">Toka</div>
+                        <div class="team-role">Frontend Developer</div>
+                    </div>
+                    <div class="team-member">
+                        <div class="team-icon">⚙️</div>
+                        <div class="team-name">Deric</div>
+                        <div class="team-role">Backend Developer</div>
+                    </div>
+                    <div class="team-member">
+                        <div class="team-icon">🧠</div>
+                        <div class="team-name">Melvin</div>
+                        <div class="team-role">IA Developer</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🚀 Améliorations Futures</h2>
+            <div class="section-content">
+                <ul class="features-list">
+                    <li>Ajout d'obstacles dynamiques qui se déplacent pendant l'entraînement</li>
+                    <li>Implémentation de Deep Q-Learning (DQN) avec réseaux de neurones</li>
+                    <li>Mode multijoueur avec plusieurs agents qui apprennent ensemble</li>
+                    <li>Animation en temps réel de l'apprentissage épisode par épisode</li>
+                    <li>Système de sauvegarde et partage de labyrinthes créés</li>
+                    <li>Graphiques détaillés des performances (convergence, récompenses)</li>
+                    <li>Support de labyrinthes 3D avec visualisation isométrique</li>
+                    <li>Intégration d'autres algorithmes (SARSA, Actor-Critic)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{% url 'home' %}" class="back-link">⬅ Retour au menu</a>
+        </div>
+    </div>
+</body>
+</html>

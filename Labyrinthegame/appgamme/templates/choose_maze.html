@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choisir un Labyrinthe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #00ffff;
+            min-height: 100vh;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 20%, rgba(255, 200, 100, 0.1), transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: glow-title 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-title {
+            0%, 100% { text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+            50% { text-shadow: 0 0 30px #00ffff, 0 0 60px #00ffff, 0 0 80px #00ffff; }
+        }
+
+        .subtitle {
+            color: #00cccc;
+            font-size: 1.1em;
+            letter-spacing: 2px;
+        }
+
+        .maze-list {
+            display: grid;
+            gap: 30px;
+        }
+
+        .maze-item {
+            background: linear-gradient(145deg, rgba(10, 20, 40, 0.95), rgba(5, 15, 35, 0.95));
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .maze-item:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .maze-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        }
+
+        .maze-title {
+            font-size: 1.5em;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .maze-info {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+
+        .maze-stat {
+            background: rgba(0, 255, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .maze-content {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .maze-preview {
+            flex-shrink: 0;
+        }
+
+        .maze-grid {
+            display: grid;
+            gap: 2px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 4px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.empty {
+            background: #4a3929;
+            border: 1px solid #3a2919;
+        }
+
+        .cell.wall {
+            background: #1a1a1a;
+            border: 1px solid #0a0a0a;
+        }
+
+        .cell.start {
+            background: radial-gradient(circle, #4ade80, #22c55e);
+            color: white;
+            border: 2px solid #16a34a;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.5);
+        }
+
+        .cell.goal {
+            background: radial-gradient(circle, #60a5fa, #3b82f6);
+            color: white;
+            border: 2px solid #2563eb;
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+        }
+
+        .maze-description {
+            flex: 1;
+        }
+
+        .maze-difficulty {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .difficulty-easy {
+            background: rgba(74, 222, 128, 0.2);
+            border: 2px solid #22c55e;
+            color: #4ade80;
+        }
+
+        .difficulty-medium {
+            background: rgba(251, 191, 36, 0.2);
+            border: 2px solid #f59e0b;
+            color: #fbbf24;
+        }
+
+        .difficulty-hard {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #dc2626;
+            color: #ef4444;
+        }
+
+        .maze-features {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+
+        .maze-features li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #00cccc;
+        }
+
+        .maze-features li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #00ffff;
+        }
+
+        .btn-solve {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 15px;
+        }
+
+        .btn-solve:hover {
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 15px 30px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #00ffff;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .maze-content {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗺️ Sélection de Labyrinthe</h1>
+            <p class="subtitle">Choisissez votre défi</p>
+        </div>
+
+        <div class="maze-list">
+            {% for maze_data in mazes %}
+            <div class="maze-item">
+                <div class="maze-header">
+                    <h3 class="maze-title">Labyrinthe {{ forloop.counter }}</h3>
+                    <div class="maze-info">
+                        <span class="maze-stat">📏 {{ maze_data.rows }}×{{ maze_data.cols }}</span>
+                        <span class="maze-stat">⚡ Niveau {{ forloop.counter }}</span>
+                    </div>
+                </div>
+
+                <div class="maze-content">
+                    <div class="maze-preview">
+                        <div class="maze-grid" style="grid-template-columns: repeat({{ maze_data.cols }}, 1fr);">
+                            {% for row in maze_data.grid %}
+                                {% for cell in row %}
+                                    <div class="cell 
+                                        {% if cell == '#' %}wall
+                                        {% elif cell == 'S' %}start
+                                        {% elif cell == 'G' %}goal
+                                        {% else %}empty
+                                        {% endif %}">
+                                        {% if cell == 'S' %}S
+                                        {% elif cell == 'G' %}G
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="maze-description">
+                        {% if forloop.counter == 1 %}
+                            <span class="maze-difficulty difficulty-easy">🟢 Facile</span>
+                            <ul class="maze-features">
+                                <li>Idéal pour débuter avec l'algorithme Q-Learning</li>
+                                <li>Chemin direct avec quelques obstacles</li>
+                                <li>Temps d'entraînement rapide</li>
+                            </ul>
+                        {% elif forloop.counter == 2 %}
+                            <span class="maze-difficulty difficulty-medium">🟡 Moyen</span>
+                            <ul class="maze-features">
+                                <li>Complexité intermédiaire avec plusieurs chemins</li>
+                                <li>Nécessite une exploration stratégique</li>
+                                <li>Bon équilibre difficulté/temps</li>
+                            </ul>
+                        {% else %}
+                            <span class="maze-difficulty difficulty-hard">🔴 Difficile</span>
+                            <ul class="maze-features">
+                                <li>Labyrinthe complexe avec de nombreux pièges</li>
+                                <li>Chemin optimal non évident</li>
+                                <li>Test ultime pour l'algorithme</li>
+                            </ul>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'solve_maze' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="maze_index" value="{{ forloop.counter0 }}">
+                            <button type="submit" class="btn-solve">🎯 Résoudre ce labyrinthe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{% url 'home' %}" class="back-link">⬅ Retour au menu</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 
 try:
@@ -30,3 +30,50 @@ def demo_view(request):
 	path_str = [f"{r},{c}" for (r, c) in path]
 	context = {"maze": maze, "path_str": path_str}
 	return render(request, "demo.html", context)
+
+def home_view(request):
+    return render(request, "home.html")
+
+def choose_maze_view(request):
+    try:
+        from rl_engine.maze import MAZES as _MAZES
+    except Exception:
+        try:
+            from Labyrinthegame.rl_engine.maze import MAZES as _MAZES
+        except Exception:
+            _MAZES = []
+    mazes = [{"grid": g, "rows": len(g), "cols": len(g[0])} for g in _MAZES]
+    return render(request, "choose_maze.html", {"mazes": mazes})
+
+def create_maze_view(request):
+    rows = range(5); cols = range(5); show = False
+    if request.method == "POST" and request.POST.get("action") == "generate":
+        try:
+            r = int(request.POST.get("rows",5)); c = int(request.POST.get("cols",5))
+            rows = range(r); cols = range(c); show = True
+        except Exception:
+            pass
+    return render(request, "create_maze.html", {"show_grid": show, "rows_range": rows, "cols_range": cols})
+
+def about_view(request):
+    return render(request, "about.html")
+
+def solve_maze(request):
+    if request.method == "POST":
+        idx = int(request.POST.get("maze_index",0))
+        try:
+            from rl_engine.maze import MAZES
+        except Exception:
+            from Labyrinthegame.rl_engine.maze import MAZES
+        request.session['last_maze'] = MAZES[idx] if 0 <= idx < len(MAZES) else []
+    return redirect('demo')
+
+def solve_custom_maze(request):
+    if request.method == "POST":
+        keys = [k for k in request.POST.keys() if k.startswith("cell_")]
+        if not keys:
+            return redirect('create_maze')
+        rows = sorted({int(k.split("_")[1]) for k in keys}); cols = sorted({int(k.split("_")[2]) for k in keys})
+        grid = [[request.POST.get(f"cell_{r}_{c}", ".") for c in range(max(cols)+1)] for r in range(max(rows)+1)]
+        request.session['last_maze'] = grid
+    return redirect('demo')
