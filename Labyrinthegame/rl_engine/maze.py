@@ -44,3 +44,24 @@ class Maze:
         if self.is_wall(r, c):
             return -10
         return -1
+
+
+# Labyrinthes prédéfinis (liste de grilles). Chaque grille est une liste de lignes
+# où chaque ligne est une liste de caractères 'S', '.', '#', 'G'.
+# Utiliser MAZES[0] dans la vue pour la démo.
+MAZES = [
+    [
+        list("S...#"),
+        list(".#..#"),
+        list(".##.."),
+        list("...#."),
+        list("..G.."),
+    ],
+    [
+        list("S.#.."),
+        list("..#.."),
+        list(".##.#"),
+        list("...#G"),
+        list("....."),
+    ],
+]

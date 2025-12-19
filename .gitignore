@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+test_melo.py
 
 # Virtual environment
 venv/
