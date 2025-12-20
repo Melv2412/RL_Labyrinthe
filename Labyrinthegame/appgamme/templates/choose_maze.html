@@ -279,19 +279,12 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🗺️ Sélection de Labyrinthe</h1>
-            <p class="subtitle">Choisissez votre défi</p>
-        </div>
-
-        <div class="maze-list">
-            {% for maze_data in mazes %}
-            <div class="maze-item">
-                <div class="maze-header">
-                    <h3 class="maze-title">Labyrinthe {{ forloop.counter }}</h3>
-                    <div class="maze-info">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choisir un Labyrinthe</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
                         <span class="maze-stat">📏 {{ maze_data.rows }}×{{ maze_data.cols }}</span>
                         <span class="maze-stat">⚡ Niveau {{ forloop.counter }}</span>
                     </div>
